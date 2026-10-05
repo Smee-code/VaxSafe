@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>System settings</h1>
+    <p class="sub">Center details, alert limits and the lists that drive assessments and schedules.</p>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <form method="post" enctype="multipart/form-data" class="card form-card">
+    {% csrf_token %}
+    {% if center.logo %}
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:18px">
+        <img class="logo-preview" src="{{ center.logo.url }}" alt="Center logo">
+        <span class="muted small">Current logo. Upload a new file below to replace it.</span>
+      </div>
+    {% endif %}
+    {% include "partials/form.html" %}
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save settings</button>
+    </div>
+  </form>
+
+  <div class="setting-links">
+    {% for card in cards %}
+    <a class="card setting-link" href="{% url 'core:settings_list' card.kind %}">
+      <span class="ico"><svg class="icon"><use href="#{% if card.kind == 'categories' %}i-clipboard{% elif card.kind == 'vaccines' %}i-syringe{% elif card.kind == 'barangays' %}i-map{% else %}i-thermometer{% endif %}"/></svg></span>
+      <span><strong>{{ card.title }}</strong><p>{{ card.description }}</p></span>
+      <span class="count">{{ card.count }} active</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

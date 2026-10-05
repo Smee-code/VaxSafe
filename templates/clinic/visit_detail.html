@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Visit · {{ patient.full_name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{% url 'clinic:patient_detail' patient.pk %}"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>{{ patient.full_name }}</a>
+    <h1>Visit on {{ visit.visit_date|date:"F j, Y" }}</h1>
+    <p class="sub">{{ patient.patient_code }} · {{ patient.age }} y/o {{ patient.get_sex_display|lower }} · Brgy. {{ patient.barangay }} · {{ patient.contact_number|default:"no phone" }}</p>
+  </div>
+  <div class="actions">
+    <span class="badge badge-{{ visit.course_status|tone }}" style="align-self:center">{{ visit.course_status }}</span>
+  </div>
+</div>
+
+{% with has_doses=doses|length %}
+<div class="stepper" aria-label="Case progress">
+  <div class="step done"><span class="n"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><span class="t">Triage</span></div>
+  <div class="step {% if assessment %}done{% else %}current{% endif %}"><span class="n">{% if assessment %}<svg class="icon icon-sm"><use href="#i-check"/></svg>{% else %}2{% endif %}</span><span class="t">Bite assessment</span></div>
+  <div class="step {% if has_doses %}done{% elif assessment %}current{% endif %}"><span class="n">{% if has_doses %}<svg class="icon icon-sm"><use href="#i-check"/></svg>{% else %}3{% endif %}</span><span class="t">Vaccination schedule</span></div>
+  <div class="step {% if visit.course_status == 'Completed' %}done{% elif has_doses %}current{% endif %}"><span class="n">{% if visit.course_status == 'Completed' %}<svg class="icon icon-sm"><use href="#i-check"/></svg>{% else %}4{% endif %}</span><span class="t">Doses completed</span></div>
+</div>
+{% endwith %}
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card-head">
+      <h2><svg class="icon"><use href="#i-clipboard"/></svg>Triage</h2>
+      <a class="btn btn-sm" href="{% url 'clinic:visit_edit' visit.pk %}"><svg class="icon icon-sm"><use href="#i-edit"/></svg>Edit</a>
+    </div>
+    <div class="card-body">
+      <dl class="facts" style="margin-top:0">
+        <div class="fact"><dt class="k">Priority</dt><dd class="v"><span class="badge badge-{{ visit.get_priority_display|tone }}">{{ visit.get_priority_display }}</span></dd></div>
+        <div class="fact"><dt class="k">Incident date</dt><dd class="v">{{ visit.incident_date|date:"M d, Y" }}</dd></div>
+        <div class="fact"><dt class="k">Where it happened</dt><dd class="v">{{ visit.incident_place }}</dd></div>
+        <div class="fact"><dt class="k">Recorded by</dt><dd class="v">{{ visit.created_by|default:"–" }}</dd></div>
+      </dl>
+      {% if visit.triage_notes %}<p style="margin-top:14px;white-space:pre-line">{{ visit.triage_notes }}</p>{% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2><svg class="icon"><use href="#i-paw"/></svg>Bite assessment</h2>
+      {% if assessment %}<a class="btn btn-sm" href="{% url 'clinic:assessment_edit' visit.pk %}"><svg class="icon icon-sm"><use href="#i-edit"/></svg>Edit</a>{% endif %}
+    </div>
+    {% if assessment %}
+    <div class="card-body">
+      <dl class="facts" style="margin-top:0">
+        <div class="fact"><dt class="k">Category</dt><dd class="v"><span class="cat cat-{{ assessment.category.code }}">{{ assessment.category.code }}</span> {{ assessment.category.name }}</dd></div>
+        <div class="fact"><dt class="k">Animal</dt><dd class="v">{{ assessment.animal_display }} · {{ assessment.get_animal_ownership_display }}</dd></div>
+        <div class="fact"><dt class="k">Animal vaccinated</dt><dd class="v">{{ assessment.get_animal_vaccination_status_display }}</dd></div>
+        <div class="fact"><dt class="k">Exposure</dt><dd class="v">{{ assessment.get_exposure_type_display }}</dd></div>
+        <div class="fact"><dt class="k">Wound location</dt><dd class="v">{{ assessment.wound_location }}</dd></div>
+        <div class="fact"><dt class="k">Assessed by</dt><dd class="v">{{ assessment.assessed_by|default:"–" }}<br><span class="muted small">{{ assessment.assessed_at|date:"M d, Y g:i A" }}</span></dd></div>
+      </dl>
+      {% if assessment.wound_description %}<p style="margin-top:14px"><strong>Wound:</strong> {{ assessment.wound_description }}</p>{% endif %}
+      {% if assessment.notes %}<p style="margin-top:8px"><strong>Notes:</strong> {{ assessment.notes }}</p>{% endif %}
+    </div>
+    {% else %}
+    <div class="cta-box">
+      <div><strong>Not assessed yet</strong><p>Record the animal, exposure and category.</p></div>
+      <a class="btn btn-primary" href="{% url 'clinic:assessment_edit' visit.pk %}">Assess bite</a>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" style="margin-top:16px">
+  <div class="card-head">
+    <h2><svg class="icon"><use href="#i-syringe"/></svg>Vaccination schedule</h2>
+    <a class="btn btn-sm{% if not doses %} btn-primary{% endif %}" href="{% url 'clinic:schedule_create' visit.pk %}"><svg class="icon icon-sm"><use href="#i-plus"/></svg>{% if doses %}Add another regimen{% else %}Create schedule{% endif %}</a>
+  </div>
+  {% if doses %}
+  {% for regimen in regimens %}
+  <div class="regimen">
+    <div class="rx">
+      <strong>{{ regimen.vaccine }}</strong>
+      <span>{{ regimen.vaccine.route|default:"Route not set" }}. {{ regimen.given }} of {{ regimen.doses|length }} dose{{ regimen.doses|length|pluralize }} given.</span>
+    </div>
+    {% include "partials/dose_strip.html" with series=regimen.doses %}
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Dose</th><th>Due date</th><th>Given</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for dose in regimen.doses %}
+        <tr{% if dose.display_status == 'Overdue' or dose.status == 'MISSED' %} class="is-alert"{% endif %}>
+          <td class="nowrap"><span class="primary">Dose {{ dose.dose_number }}</span><span class="sub">Day {{ dose.day_offset }}</span></td>
+          <td class="nowrap">{{ dose.due_date|date:"D, M j, Y" }}</td>
+          <td>{% if dose.date_given %}<span class="nowrap">{{ dose.date_given|date:"M j, Y" }}</span><span class="sub">Lot {{ dose.lot.lot_number }}{% if dose.injection_site %}, {{ dose.injection_site|lower }}{% endif %}{% if dose.administered_by %}, by {{ dose.administered_by }}{% endif %}</span>{% else %}–{% endif %}</td>
+          <td><span class="badge badge-{{ dose.display_status|tone }}">{{ dose.display_status }}</span>{% if dose.notes %}<span class="sub">{{ dose.notes }}</span>{% endif %}</td>
+          <td class="actions">
+            {% include "clinic/_dose_actions.html" with next_url=request.path %}
+            {% if dose.status != 'COMPLETED' %}
+            <form class="inline" method="post" action="{% url 'clinic:dose_delete' dose.pk %}" data-confirm="Remove this scheduled dose? Use this only if it was scheduled by mistake.">{% csrf_token %}
+              <button class="btn btn-xs btn-ghost" type="submit" title="Remove scheduled dose" aria-label="Remove scheduled dose">&times;</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+  <div class="table-note">
+    Recording a dose takes one dose out of the selected lot in inventory.
+    <div class="strip-legend" aria-hidden="true"><span><i class="given"></i>Given</span><span><i class="due"></i>Due today</span><span><i class="upcoming"></i>Upcoming</span><span><i class="missed"></i>Missed or overdue</span></div>
+  </div>
+  {% else %}
+  <div class="cta-box">
+    <div><strong>No schedule yet</strong><p>{% if assessment %}Pick a vaccine regimen and the follow-up dates are generated for you.{% else %}Complete the bite assessment first, then create the schedule.{% endif %}</p></div>
+    {% if assessment %}<a class="btn btn-primary" href="{% url 'clinic:schedule_create' visit.pk %}">Create schedule</a>{% endif %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

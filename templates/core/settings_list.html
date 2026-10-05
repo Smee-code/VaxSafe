@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}{{ spec.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{% url 'core:settings' %}"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Settings</a>
+    <h1>{{ spec.title }}</h1>
+    <p class="sub">{{ spec.description }}</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="{% url 'core:settings_create' kind %}"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Add {{ spec.singular }}</a>
+  </div>
+</div>
+
+<section class="card">
+  {% if objects %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr>{% for name, label in spec.columns %}<th>{{ label }}</th>{% endfor %}<th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for obj in objects %}
+        <tr>
+          {% for name, label in spec.columns %}
+            <td{% if forloop.first %} class="primary"{% endif %}>{% with value=obj|attr:name %}{% if value is None %}<span class="muted">Center default</span>{% else %}{{ value|truncatechars:90 }}{% endif %}{% endwith %}</td>
+          {% endfor %}
+          <td>{% if obj.is_active %}<span class="badge badge-ok">Active</span>{% else %}<span class="badge badge-muted">Disabled</span>{% endif %}</td>
+          <td class="actions">
+            <a class="btn btn-sm" href="{% url 'core:settings_edit' kind obj.pk %}"><svg class="icon icon-sm"><use href="#i-edit"/></svg>Edit</a>
+            <form class="inline" method="post" action="{% url 'core:settings_toggle' kind obj.pk %}">{% csrf_token %}
+              <button class="btn btn-sm btn-ghost" type="submit">{% if obj.is_active %}Disable{% else %}Enable{% endif %}</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="table-note">Records in use can't be deleted. Disable them to hide them from new entries while keeping past records intact.</p>
+  {% else %}
+  <div class="empty"><strong>Nothing here yet</strong>Add the first {{ spec.singular }}.</div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Appointment calendar{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{% url 'clinic:appointments' %}"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Appointments</a>
+    <h1>{{ month|date:"F Y" }}</h1>
+    <p class="sub">Doses per day. Select a day to see the patients.</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="?month={{ prev_month|date:'Y-m' }}" aria-label="Previous month"><svg class="icon icon-sm"><use href="#i-chev-left"/></svg>{{ prev_month|date:"M" }}</a>
+    <a class="btn" href="?month={{ today|date:'Y-m' }}">Today</a>
+    <a class="btn" href="?month={{ next_month|date:'Y-m' }}" aria-label="Next month">{{ next_month|date:"M" }}<svg class="icon icon-sm"><use href="#i-chev-right"/></svg></a>
+  </div>
+</div>
+
+<section class="card" style="overflow:hidden">
+  <table class="calendar">
+    <thead><tr>{% for d in weekdays %}<th scope="col">{{ d }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for week in weeks %}
+      <tr>
+      {% for day, tally in week %}
+        <td class="{% if day.month != month.month %}out{% endif %}{% if day == today %} today{% endif %}">
+          <a class="day" href="{% url 'clinic:appointments' %}?date={{ day|date:'Y-m-d' }}">
+            <span class="d">{{ day.day }}</span>
+            {% if tally %}
+            <span class="chips">
+              {% if tally.pending %}<span class="chip pending">{{ tally.pending }} due</span>{% endif %}
+              {% if tally.completed %}<span class="chip completed">{{ tally.completed }} given</span>{% endif %}
+              {% if tally.missed %}<span class="chip missed">{{ tally.missed }} missed</span>{% endif %}
+            </span>
+            {% endif %}
+          </a>
+        </td>
+      {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Lot {{ lot.lot_number }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <a class="back" href="{% url 'inventory:stock_list' %}"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Vaccine stock</a>
+    <h1>{{ lot.vaccine_type }} · Lot {{ lot.lot_number }}</h1>
+    <p class="sub"><span class="badge badge-{{ status|tone }}">{{ status }}</span></p>
+  </div>
+  {% if user.can_manage_clinical %}
+  <div class="actions"><a class="btn" href="{% url 'inventory:stock_adjust' %}?lot={{ lot.pk }}">Adjust stock</a></div>
+  {% endif %}
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="label">On hand</span><div class="value">{{ lot.quantity_on_hand }}</div><div class="hint">of {{ lot.quantity_received }} received</div></div>
+  <div class="stat{% if lot.is_expired %} is-danger{% elif status == 'Expiring soon' %} is-warn{% endif %}"><span class="label">Expiry date</span><div class="value" style="font-size:20px">{{ lot.expiry_date|date:"M d, Y" }}</div><div class="hint">{% if lot.is_expired %}Expired {{ lot.expiry_date|timesince }} ago{% else %}{{ lot.days_to_expiry }} days left{% endif %}</div></div>
+  <div class="stat"><span class="label">Received</span><div class="value" style="font-size:20px">{{ lot.date_received|date:"M d, Y" }}</div><div class="hint">{{ lot.supplier|default:"Supplier not recorded" }}</div></div>
+  <div class="stat"><span class="label">Storage</span><div class="value" style="font-size:20px">{{ lot.storage_unit|default:"–" }}</div><div class="hint">Received by {{ lot.received_by|default:"–" }}</div></div>
+</div>
+
+<section class="card">
+  <div class="card-head"><h2>Movements</h2></div>
+  {% if movements %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Type</th><th class="num">Quantity</th><th>Details</th><th>By</th></tr></thead>
+      <tbody>
+      {% for m in movements %}
+        <tr>
+          <td class="nowrap">{{ m.created_at|date:"M d, Y g:i A" }}</td>
+          <td><span class="badge badge-{{ m.get_movement_type_display|tone }}">{{ m.get_movement_type_display }}</span></td>
+          <td class="num">{{ m.quantity|stringformat:"+d" }}</td>
+          <td>{% if m.dose and user.can_manage_clinical %}<a href="{% url 'clinic:visit_detail' m.dose.visit_id %}">{{ m.dose.visit.patient.full_name }}</a> · dose {{ m.dose.dose_number }}{% elif m.dose %}Dose given to a patient{% else %}{{ m.reason }}{% endif %}</td>
+          <td>{{ m.performed_by|default:"–" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">No movements recorded.</div>
+  {% endif %}
+</section>
+{% if lot.notes %}<section class="card"><div class="card-body"><strong>Notes:</strong> {{ lot.notes }}</div></section>{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% if dose.status != 'COMPLETED' %}
+<span class="btn-row">
+  <a class="btn btn-xs btn-primary" href="{% url 'clinic:dose_record' dose.pk %}?next={{ next_url|urlencode }}">Record</a>
+  <a class="btn btn-xs" href="{% url 'clinic:dose_reschedule' dose.pk %}?next={{ next_url|urlencode }}">Reschedule</a>
+  {% if dose.status == 'PENDING' and dose.due_date <= today %}
+  <form class="inline" method="post" action="{% url 'clinic:dose_missed' dose.pk %}" data-confirm="Mark dose {{ dose.dose_number }} as missed?">{% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    <button class="btn btn-xs btn-ghost btn-danger" type="submit">Missed</button>
+  </form>
+  {% endif %}
+</span>
+{% endif %}

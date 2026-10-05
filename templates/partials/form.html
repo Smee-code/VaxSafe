@@ -1,0 +1,15 @@
+{% load vaxsafe %}
+{% if form.non_field_errors %}
+  <div class="form-errors">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>
+{% endif %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+{% with section_list=sections %}
+{% for title, fields in form|bound_sections:section_list %}
+  <div class="fieldset">
+    {% if title %}<div class="fieldset-title">{{ title }}</div>{% endif %}
+    <div class="fields">
+      {% for field in fields %}{% include "partials/field.html" %}{% endfor %}
+    </div>
+  </div>
+{% endfor %}
+{% endwith %}

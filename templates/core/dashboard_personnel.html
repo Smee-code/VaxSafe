@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Monitoring{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Monitoring, {{ today|date:"Y" }}</h1>
+    <p class="sub">Summary figures for {{ center.name }}. Individual patient records are not shown to your role.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="{% url 'reports:index' %}"><svg class="icon icon-sm"><use href="#i-chart"/></svg>Open reports</a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <span class="label">Bite cases this year</span>
+    <div class="value">{{ cases_year }}</div>
+    <div class="hint">{{ cases_month }} this month</div>
+  </div>
+  <div class="stat is-ok">
+    <span class="label">Courses completed</span>
+    <div class="value">{{ completion_rate }}</div>
+    <div class="hint">Every dose given</div>
+  </div>
+  <div class="stat">
+    <span class="label">Dose adherence</span>
+    <div class="value">{{ adherence }}</div>
+    <div class="hint">Due doses that were given</div>
+  </div>
+  <div class="stat">
+    <span class="label">Doses given</span>
+    <div class="value">{{ given_month }}</div>
+    <div class="hint">This month</div>
+  </div>
+  <a class="stat{% if alerts.stock_total %} is-warn{% endif %}" href="{% url 'inventory:stock_list' %}">
+    <span class="label">Stock alerts</span>
+    <div class="value">{{ alerts.stock_total }}</div>
+    <div class="hint">{{ alerts.low_stock|length }} low, {{ alerts.expiring|length }} expiring, {{ alerts.expired|length }} expired</div>
+  </a>
+  <a class="stat{% if alerts.temperature %} is-danger{% endif %}" href="{% url 'inventory:temperature_list' %}">
+    <span class="label">Fridge alerts</span>
+    <div class="value">{{ alerts.temperature|length }}</div>
+    <div class="hint">Safe at {{ center.temp_min }}–{{ center.temp_max }}°C</div>
+  </a>
+</div>
+
+<div class="board">
+  <div class="board-main">
+    <section class="card chart-card span-all">
+      <div class="card-head"><h2>Bite cases per month</h2><a class="link" href="{% url 'reports:report' 'bite-cases' %}">Report</a></div>
+      <div class="card-body"><canvas id="chart-cases-by-month" aria-label="Bite cases per month by category"></canvas></div>
+    </section>
+    <section class="card chart-card tall">
+      <div class="card-head"><h2>Cases by barangay</h2><a class="link" href="{% url 'reports:report' 'barangay' %}">Report</a></div>
+      <div class="card-body"><canvas id="chart-cases-by-barangay" aria-label="Cases by barangay"></canvas></div>
+    </section>
+    <section class="card chart-card tall">
+      <div class="card-head"><h2>Cases by animal</h2></div>
+      <div class="card-body"><canvas id="chart-cases-by-animal" aria-label="Cases by animal"></canvas></div>
+    </section>
+  </div>
+  <div class="board-side">
+    {% include "partials/alerts_panel.html" %}
+    {% include "partials/fridges.html" %}
+    <section class="card chart-card">
+      <div class="card-head"><h2>Doses given and missed</h2><a class="link" href="{% url 'reports:report' 'completion' %}">Report</a></div>
+      <div class="card-body"><canvas id="chart-dose-status" aria-label="Doses completed versus missed"></canvas></div>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block charts %}
+{{ charts|json_script:"chart-data" }}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+{% endblock %}

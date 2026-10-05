@@ -1,0 +1,41 @@
+{% extends is_modal|yesno:"modal_base.html,base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+{% if is_modal %}
+<div class="modal-head">
+  <div>
+    <h2 id="modal-title">{{ title }}</h2>
+    {% if subtitle %}<p class="sub">{{ subtitle }}</p>{% endif %}
+  </div>
+  <button type="button" class="icon-btn" data-modal-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button>
+</div>
+{% else %}
+<div class="page-head">
+  <div>
+    {% if back_url %}<a class="back" href="{{ back_url }}"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Back</a>{% endif %}
+    <h1>{{ title }}</h1>
+    {% if subtitle %}<p class="sub">{{ subtitle }}</p>{% endif %}
+  </div>
+</div>
+{% endif %}
+
+<div class="form-layout{% if aside_template %} has-aside{% endif %}">
+  <form method="post" action="{{ request.get_full_path }}" enctype="multipart/form-data" class="card form-card" data-modal-form>
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    {% if intro %}<p class="intro">{{ intro }}</p>{% endif %}
+    {% include "partials/form.html" %}
+    <div class="form-actions">
+      {% if is_modal %}<button class="btn btn-ghost" type="button" data-modal-close>Cancel</button>
+      {% elif back_url %}<a class="btn btn-ghost" href="{{ back_url }}">Cancel</a>{% endif %}
+      {% if secondary_submit %}<button class="btn" type="submit" name="then" value="{{ secondary_submit.0 }}">{{ secondary_submit.1 }}</button>{% endif %}
+      <button class="btn btn-primary" type="submit">{{ submit_label|default:"Save" }}</button>
+    </div>
+  </form>
+  {% if aside_template %}<aside>{% include aside_template %}</aside>{% endif %}
+</div>
+
+{% for list_id, options in form.datalists.items %}
+<datalist id="{{ list_id }}">{% for option in options %}<option value="{{ option }}">{% endfor %}</datalist>
+{% endfor %}
+{% endblock %}

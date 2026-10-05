@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>User management</h1>
+    <p class="sub">Accounts and roles. Deactivate accounts instead of deleting them so the audit trail stays complete.</p>
+  </div>
+  <div class="actions"><a class="btn btn-primary" href="{% url 'accounts:user_create' %}"><svg class="icon icon-sm"><use href="#i-user-plus"/></svg>Add user</a></div>
+</div>
+
+<section class="card">
+  <form class="toolbar" method="get">
+    <div class="grow search"><svg class="icon icon-sm"><use href="#i-search"/></svg><input class="input" name="q" value="{{ q }}" placeholder="Search name, username or email" aria-label="Search users"></div>
+    <select class="input" style="width:auto" name="role" data-autosubmit aria-label="Role"><option value="">All roles</option>{% for value, label in roles %}<option value="{{ value }}"{% if value == role %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select class="input" style="width:auto" name="status" data-autosubmit aria-label="Status"><option value="">Any status</option><option value="active"{% if status == 'active' %} selected{% endif %}>Active</option><option value="inactive"{% if status == 'inactive' %} selected{% endif %}>Inactive</option></select>
+    <button class="btn" type="submit">Search</button>
+  </form>
+  {% if page %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Contact</th><th>Last sign-in</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for u in page %}
+        <tr>
+          <td><span class="primary">{{ u.get_full_name|default:u.username }}</span>{% if u.position %}<span class="sub">{{ u.position }}</span>{% endif %}</td>
+          <td>{{ u.username }}</td>
+          <td><span class="badge plain {% if u.role == 'ADMIN' %}badge-brand{% elif u.role == 'STAFF' %}badge-info{% else %}badge-muted{% endif %}">{{ u.get_role_display }}</span></td>
+          <td>{{ u.email|default:"" }}<span class="sub">{{ u.contact_number }}</span></td>
+          <td class="nowrap">{% if u.last_login %}{{ u.last_login|date:"M d, Y g:i A" }}{% else %}<span class="muted">Never</span>{% endif %}</td>
+          <td>{% if u.is_active %}<span class="badge badge-ok">Active</span>{% else %}<span class="badge badge-muted">Inactive</span>{% endif %}</td>
+          <td class="actions">
+            <a class="btn btn-sm" href="{% url 'accounts:user_edit' u.pk %}">Edit</a>
+            <a class="btn btn-sm btn-ghost" href="{% url 'accounts:user_reset_password' u.pk %}">Reset password</a>
+            {% if u.pk != user.pk %}
+            <form class="inline" method="post" action="{% url 'accounts:user_toggle' u.pk %}" data-confirm="{% if u.is_active %}Deactivate {{ u }}? They will no longer be able to sign in.{% else %}Reactivate {{ u }}?{% endif %}">{% csrf_token %}
+              <button class="btn btn-sm btn-ghost{% if u.is_active %} btn-danger{% endif %}" type="submit">{% if u.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+  {% else %}
+  <div class="empty"><strong>No users found</strong>Try a different search.</div>
+  {% endif %}
+</section>
+{% endblock %}

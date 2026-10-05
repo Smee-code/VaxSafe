@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load vaxsafe static %}
+{% block title %}Today{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Today at {{ center.name }}</h1>
+    <p class="sub">{% if due_today_count %}{{ due_today_count }} patient{{ due_today_count|pluralize }} {{ due_today_count|pluralize:"is,are" }} due for a dose today.{% else %}No doses are due today.{% endif %}{% if follow_up_count %} {{ follow_up_count }} need{{ follow_up_count|pluralize:"s," }} a follow-up call.{% endif %}</p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{% url 'inventory:temperature_create' %}"><svg class="icon icon-sm"><use href="#i-thermometer"/></svg>Log temperature</a>
+    <a class="btn" href="{% url 'inventory:stock_receive' %}"><svg class="icon icon-sm"><use href="#i-package"/></svg>Receive stock</a>
+    <a class="btn btn-primary" href="{% url 'clinic:patient_create' %}"><svg class="icon icon-sm"><use href="#i-user-plus"/></svg>Register patient</a>
+  </div>
+</div>
+
+<div class="stats">
+  <a class="stat is-ok" href="{% url 'clinic:appointments' %}?tab=today">
+    <span class="label">Due today</span>
+    <div class="value">{{ due_today_count }}</div>
+    <div class="hint">{{ given_today }} given so far</div>
+  </a>
+  <a class="stat{% if follow_up_count %} is-danger{% endif %}" href="{% url 'clinic:appointments' %}?tab=followup">
+    <span class="label">Missed or overdue</span>
+    <div class="value">{{ follow_up_count }}</div>
+    <div class="hint">Patients to call</div>
+  </a>
+  <div class="stat">
+    <span class="label">New cases today</span>
+    <div class="value">{{ visits_today }}</div>
+    <div class="hint">Visits recorded</div>
+  </div>
+  <a class="stat{% if alerts.stock_total %} is-warn{% endif %}" href="{% url 'inventory:stock_list' %}">
+    <span class="label">Stock alerts</span>
+    <div class="value">{{ alerts.stock_total }}</div>
+    <div class="hint">{{ alerts.low_stock|length }} low, {{ alerts.expiring|length }} expiring, {{ alerts.expired|length }} expired</div>
+  </a>
+  <a class="stat{% if alerts.temperature %} is-danger{% endif %}" href="{% url 'inventory:temperature_list' %}">
+    <span class="label">Fridge alerts</span>
+    <div class="value">{{ alerts.temperature|length }}</div>
+    <div class="hint">Safe at {{ center.temp_min }}–{{ center.temp_max }}°C</div>
+  </a>
+  {% if user.is_admin %}
+  <a class="stat" href="{% url 'clinic:patient_list' %}">
+    <span class="label">Patients on record</span>
+    <div class="value">{{ total_patients|default:0 }}</div>
+    <div class="hint">{{ active_users }} active account{{ active_users|pluralize }}</div>
+  </a>
+  {% endif %}
+</div>
+
+<div class="board">
+  <div class="board-main">
+    <section class="card">
+      <div class="card-head">
+        <h2><svg class="icon"><use href="#i-calendar"/></svg>Due today</h2>
+        <a class="link" href="{% url 'clinic:appointments' %}?tab=today">All {{ due_today_count }}</a>
+      </div>
+      {% if due_today %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Patient</th><th>Course</th><th></th></tr></thead>
+          <tbody>
+          {% for dose in due_today %}
+            <tr>
+              <td><a class="primary" href="{% url 'clinic:visit_detail' dose.visit_id %}">{{ dose.visit.patient.full_name }}</a><span class="sub">{{ dose.vaccine_type }}, dose {{ dose.dose_number }}</span></td>
+              <td>{% include "partials/dose_strip.html" with series=dose.series current=dose small=True %}</td>
+              <td class="actions"><a class="btn btn-sm btn-primary" href="{% url 'clinic:dose_record' dose.pk %}?next={{ request.path|urlencode }}">Give dose</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty"><svg class="icon"><use href="#i-calendar"/></svg><strong>Nothing due today</strong>Upcoming doses are listed under Doses due.</div>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2><svg class="icon"><use href="#i-alert"/></svg>Missed or overdue</h2>
+        <a class="link" href="{% url 'clinic:appointments' %}?tab=followup">All {{ follow_up_count }}</a>
+      </div>
+      {% if follow_up %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Patient</th><th>Course</th><th>Was due</th></tr></thead>
+          <tbody>
+          {% for dose in follow_up %}
+            <tr data-href="{% url 'clinic:visit_detail' dose.visit_id %}">
+              <td><a class="primary" href="{% url 'clinic:visit_detail' dose.visit_id %}">{{ dose.visit.patient.full_name }}</a><span class="sub">{{ dose.visit.patient.contact_number|default:"No phone on file" }}</span></td>
+              <td>{% include "partials/dose_strip.html" with series=dose.series current=dose small=True %}</td>
+              <td class="nowrap">{{ dose.due_date|date:"M j" }}<span class="sub">{{ dose.due_date|timesince }} ago</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="all-clear"><svg class="icon"><use href="#i-check-circle"/></svg>Every patient is on schedule.</div>
+      {% endif %}
+    </section>
+
+    {% if charts %}
+    <section class="card chart-card span-all">
+      <div class="card-head"><h2><svg class="icon"><use href="#i-chart"/></svg>Bite cases, last 6 months</h2><a class="link" href="{% url 'reports:report' 'bite-cases' %}">Full report</a></div>
+      <div class="card-body"><canvas id="chart-cases-by-month" aria-label="Bite cases per month by category"></canvas></div>
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="board-side">
+    {% include "partials/alerts_panel.html" %}
+    {% include "partials/fridges.html" %}
+    <section class="card">
+      <div class="card-head"><h2><svg class="icon"><use href="#i-clipboard"/></svg>Recent cases</h2><a class="link" href="{% url 'clinic:assessment_list' %}">All assessments</a></div>
+      {% if recent_visits %}
+      <ul class="alert-list">
+        {% for visit in recent_visits %}
+        <li>
+          {% if visit.assessment %}<span class="cat cat-{{ visit.assessment.category.code }}">{{ visit.assessment.category.code }}</span>{% else %}<span class="cat cat-none">–</span>{% endif %}
+          <div><strong><a href="{% url 'clinic:visit_detail' visit.pk %}">{{ visit.patient.full_name }}</a></strong>
+            <span class="meta">{{ visit.visit_date|date:"M j" }}, {{ visit.incident_place|lower }}{% if visit.priority == 'URGENT' %}. <span class="temp-bad">Urgent</span>{% endif %}</span></div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty"><strong>No cases yet</strong>Register a patient to start.</div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block charts %}
+{% if charts %}
+{{ charts|json_script:"chart-data" }}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+{% endif %}
+{% endblock %}

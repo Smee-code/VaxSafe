@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}{{ patient.full_name }}{% endblock %}
+{% block content %}
+<a class="back" href="{% url 'clinic:patient_list' %}"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Patients</a>
+
+<section class="card profile" style="margin-top:6px">
+  <span class="big-avatar">{{ patient.first_name|slice:":1" }}{{ patient.last_name|slice:":1" }}</span>
+  <div>
+    <h1>{{ patient.full_name }}</h1>
+    <p class="muted">{{ patient.patient_code }} · {{ patient.age }} years old · {{ patient.get_sex_display }}</p>
+    <dl class="facts">
+      <div class="fact"><dt class="k">Address</dt><dd class="v">{{ patient.full_address }}</dd></div>
+      <div class="fact"><dt class="k">Contact number</dt><dd class="v">{{ patient.contact_number|default:"–" }}</dd></div>
+      <div class="fact"><dt class="k">Birth date</dt><dd class="v">{{ patient.birth_date|date:"M d, Y" }}</dd></div>
+      <div class="fact"><dt class="k">Emergency contact</dt><dd class="v">{% if patient.emergency_contact_name %}{{ patient.emergency_contact_name }}{% if patient.emergency_contact_relationship %} ({{ patient.emergency_contact_relationship }}){% endif %}<br><span class="muted">{{ patient.emergency_contact_number }}</span>{% else %}–{% endif %}</dd></div>
+      <div class="fact"><dt class="k">Registered</dt><dd class="v">{{ patient.created_at|date:"M d, Y" }}{% if patient.created_by %} by {{ patient.created_by }}{% endif %}</dd></div>
+    </dl>
+  </div>
+  <div class="actions btn-row">
+    <a class="btn" href="{% url 'clinic:patient_edit' patient.pk %}"><svg class="icon icon-sm"><use href="#i-edit"/></svg>Edit</a>
+    <a class="btn btn-primary" href="{% url 'clinic:visit_create' patient.pk %}"><svg class="icon icon-sm"><use href="#i-plus"/></svg>New visit</a>
+  </div>
+</section>
+
+<h2 style="margin:28px 0 12px">Treatment history <span class="muted" style="font-weight:500">({{ visits|length }} visit{{ visits|length|pluralize }})</span></h2>
+
+{% for visit in visits %}
+<section class="card visit-card">
+  <div class="card-head">
+    <div class="visit-meta">
+      <a href="{% url 'clinic:visit_detail' visit.pk %}"><strong>Visit on {{ visit.visit_date|date:"M d, Y" }}</strong></a>
+      {% if visit.priority == 'URGENT' %}<span class="badge badge-danger">Urgent</span>{% endif %}
+      <span class="badge badge-{{ visit.course_status|tone }}">{{ visit.course_status }}</span>
+    </div>
+    <a class="btn btn-sm" href="{% url 'clinic:visit_detail' visit.pk %}">Open visit</a>
+  </div>
+  <div class="card-body">
+    <dl class="facts" style="margin-top:0">
+      <div class="fact"><dt class="k">Incident</dt><dd class="v">{{ visit.incident_date|date:"M d, Y" }} · {{ visit.incident_place }}</dd></div>
+      {% if visit.assessment %}
+      <div class="fact"><dt class="k">Category</dt><dd class="v"><span class="cat cat-{{ visit.assessment.category.code }}">{{ visit.assessment.category.code }}</span></dd></div>
+      <div class="fact"><dt class="k">Animal</dt><dd class="v">{{ visit.assessment.animal_display }} · {{ visit.assessment.get_animal_ownership_display }}</dd></div>
+      <div class="fact"><dt class="k">Exposure</dt><dd class="v">{{ visit.assessment.get_exposure_type_display }} on {{ visit.assessment.wound_location|lower }}</dd></div>
+      {% else %}
+      <div class="fact"><dt class="k">Assessment</dt><dd class="v"><a href="{% url 'clinic:assessment_edit' visit.pk %}">Not yet assessed. Assess now.</a></dd></div>
+      {% endif %}
+    </dl>
+  </div>
+  {% regroup visit.doses.all|dictsort:"vaccine_type_id" by vaccine_type as regimens %}
+  {% for regimen in regimens %}
+  {% with upcoming=regimen.list|next_pending %}
+  <div class="regimen" style="border-top:1px solid var(--rule-soft)">
+    <div class="rx">
+      <strong>{{ regimen.grouper }}</strong>
+      <span>{% if upcoming %}Next is dose {{ upcoming.dose_number }}, due {{ upcoming.due_date|date:"M j" }}{% if upcoming.strip_state == 'missed' %} and missed{% endif %}{% else %}Course complete{% endif %}</span>
+    </div>
+    {% include "partials/dose_strip.html" with series=regimen.list current=upcoming %}
+    {% if upcoming %}<a class="btn btn-sm btn-primary" href="{% url 'clinic:dose_record' upcoming.pk %}?next={{ request.path|urlencode }}">Give dose {{ upcoming.dose_number }}</a>{% endif %}
+  </div>
+  {% endwith %}
+  {% endfor %}
+</section>
+{% empty %}
+<section class="card">
+  <div class="cta-box">
+    <div><strong>No visits recorded</strong><p>Record the bite incident and triage to start a case.</p></div>
+    <a class="btn btn-primary" href="{% url 'clinic:visit_create' patient.pk %}">Record visit</a>
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

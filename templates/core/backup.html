@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Backup{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Backup and data export</h1>
+    <p class="sub">Download a copy of all records. Keep backups somewhere safe, such as a second drive or an encrypted cloud folder. They contain patient data.</p>
+  </div>
+</div>
+
+<div class="grid grid-main">
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2><svg class="icon"><use href="#i-database"/></svg>Full database backup</h2><span class="muted small">{{ size|filesize }}</span></div>
+      <div class="card-body">
+        <p>A complete copy of the database file, including users, settings, patients, stock and the audit log. Use it to restore the whole system.</p>
+        <p class="muted small" style="margin-top:8px">To restore: stop the server, replace <code>db.sqlite3</code> in the VaxSafe folder with the downloaded file (rename it to <code>db.sqlite3</code>), then start the server again.</p>
+        <p style="margin-top:14px"><a class="btn btn-primary" href="{% url 'core:backup_database' %}"><svg class="icon icon-sm"><use href="#i-download"/></svg>Download database (.sqlite3)</a></p>
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h2><svg class="icon"><use href="#i-file"/></svg>Data export (JSON)</h2></div>
+      <div class="card-body">
+        <p>Every record in a readable JSON format. Useful for moving data to another system, or for loading into a fresh installation with <code>python manage.py loaddata</code>.</p>
+        <p style="margin-top:14px"><a class="btn" href="{% url 'core:backup_json' %}"><svg class="icon icon-sm"><use href="#i-download"/></svg>Download JSON export</a></p>
+      </div>
+    </section>
+  </div>
+  <div class="stack">
+    <section class="card">
+      <div class="card-head"><h2>What's in the database</h2></div>
+      <table class="table compact">
+        <tbody>
+          {% for label, count in counts %}<tr><td>{{ label }}</td><td class="num">{{ count }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <section class="card">
+      <div class="card-body">
+        <strong>Last backup</strong>
+        {% if last %}<p class="muted" style="margin-top:4px">{{ last.timestamp|date:"M d, Y g:i A" }} by {{ last.user }} ({{ last.object_repr|cut:"Backup: " }})</p>
+        {% else %}<p class="muted" style="margin-top:4px">No backup downloaded yet.</p>{% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

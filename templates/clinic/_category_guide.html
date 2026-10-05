@@ -1,0 +1,14 @@
+<section class="card guide">
+  <div class="card-head"><h2><svg class="icon"><use href="#i-info"/></svg>Category guide</h2></div>
+  <div class="card-body">
+    {% for c in categories %}
+    <div class="item">
+      <h3><span class="cat cat-{{ c.code }}">{{ c.code }}</span>{{ c.name }}</h3>
+      <p>{{ c.description }}</p>
+      {% if c.management %}<p class="mgmt"><strong>Management:</strong> {{ c.management }}</p>{% endif %}
+    </div>
+    {% empty %}
+    <p class="muted">No categories set up. An administrator can add them in Settings.</p>
+    {% endfor %}
+  </div>
+</section>

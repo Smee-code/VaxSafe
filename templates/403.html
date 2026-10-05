@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Access denied{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div>
+    <div class="code">403</div>
+    <h1 style="margin-top:12px">You don't have access to this page</h1>
+    <p class="muted" style="margin-top:6px">Your role ({{ user.get_role_display|default:"guest" }}) can't open this screen. Ask an administrator if you need access.</p>
+    <p style="margin-top:18px"><a class="btn btn-primary" href="{% url 'core:dashboard' %}">Go to dashboard</a></p>
+  </div>
+</div>
+{% endblock %}

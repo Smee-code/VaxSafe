@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Usage log{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Usage log</h1>
+    <p class="sub">Every change to stock. Doses given are added automatically, and wasted, damaged or expired doses are recorded by staff.</p>
+  </div>
+  {% if user.can_manage_clinical %}<div class="actions"><a class="btn" href="{% url 'inventory:stock_adjust' %}">Record wasted / damaged</a></div>{% endif %}
+</div>
+
+<section class="card">
+  <form class="toolbar" method="get">
+    <select class="input" style="width:auto" name="type" data-autosubmit aria-label="Type"><option value="">All types</option>{% for value, label in types %}<option value="{{ value }}"{% if value == kind %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <select class="input" style="width:auto" name="vaccine" data-autosubmit aria-label="Vaccine"><option value="">All vaccines</option>{% for v in vaccines %}<option value="{{ v.pk }}"{% if v.pk == vaccine %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+    <input class="input" style="width:auto" type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" aria-label="From">
+    <input class="input" style="width:auto" type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" aria-label="To">
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  {% if page %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Date</th><th>Type</th><th>Vaccine / lot</th><th class="num">Qty</th><th>Details</th><th>By</th></tr></thead>
+      <tbody>
+      {% for m in page %}
+        <tr>
+          <td class="nowrap">{{ m.created_at|date:"M d, Y" }}<span class="sub">{{ m.created_at|date:"g:i A" }}</span></td>
+          <td><span class="badge badge-{{ m.get_movement_type_display|tone }}">{{ m.get_movement_type_display }}</span></td>
+          <td><a href="{% url 'inventory:lot_detail' m.lot_id %}">{{ m.lot.vaccine_type }}</a><span class="sub">Lot {{ m.lot.lot_number }}</span></td>
+          <td class="num">{{ m.quantity|stringformat:"+d" }}</td>
+          <td>{% if m.dose and user.can_manage_clinical %}<a href="{% url 'clinic:visit_detail' m.dose.visit_id %}">{{ m.dose.visit.patient.full_name }}</a> · dose {{ m.dose.dose_number }}{% elif m.dose %}Dose given to a patient{% else %}{{ m.reason }}{% endif %}</td>
+          <td>{{ m.performed_by|default:"–" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+  {% else %}
+  <div class="empty"><strong>No movements</strong>Nothing matches these filters.</div>
+  {% endif %}
+</section>
+{% endblock %}

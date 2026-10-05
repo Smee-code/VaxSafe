@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Vaccine stock{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Vaccine stock</h1>
+    <p class="sub">Usable doses per vaccine and every lot on hand. Stock goes down automatically when a dose is recorded.</p>
+  </div>
+  {% if user.can_manage_clinical %}
+  <div class="actions">
+    <a class="btn" href="{% url 'inventory:stock_adjust' %}">Adjust stock</a>
+    <a class="btn btn-primary" href="{% url 'inventory:stock_receive' %}"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Receive stock</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="stock-cards">
+  {% for s in summary %}{% if s.vaccine.is_active or s.usable %}
+  <section class="card stock-card{% if s.low %} is-low{% endif %}">
+    <div class="name">{{ s.vaccine.name }}</div>
+    <div class="qty">{{ s.usable }} <small>usable doses</small></div>
+    <div class="meter" aria-hidden="true"><span style="width:{% widthratio s.usable s.threshold|add:s.threshold 100 %}%"></span></div>
+    <div class="foot">
+      <span>Alert at {{ s.threshold }}</span>
+      {% if s.low %}<span class="badge badge-danger">Low stock</span>{% elif s.expired %}<span class="badge badge-warn">{{ s.expired }} expired</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}
+    </div>
+  </section>
+  {% endif %}{% endfor %}
+</div>
+
+<section class="card">
+  <div class="card-head">
+    <h2><svg class="icon"><use href="#i-package"/></svg>Lots</h2>
+    <a class="link" href="{% url 'inventory:movement_list' %}">Usage log</a>
+  </div>
+  <form class="toolbar" method="get">
+    <select class="input" style="width:auto" name="vaccine" data-autosubmit aria-label="Vaccine"><option value="">All vaccines</option>{% for v in vaccines %}<option value="{{ v.pk }}"{% if v.pk == vaccine_filter %} selected{% endif %}>{{ v }}</option>{% endfor %}</select>
+    <select class="input" style="width:auto" name="show" data-autosubmit aria-label="Show"><option value="active"{% if show == 'active' %} selected{% endif %}>Lots with stock</option><option value="all"{% if show == 'all' %} selected{% endif %}>All lots, including used up</option></select>
+  </form>
+  {% if lots %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Vaccine</th><th>Lot</th><th>Expiry</th><th class="num">Received</th><th class="num">On hand</th><th>Storage</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for lot, status in lots %}
+        <tr data-href="{% url 'inventory:lot_detail' lot.pk %}"{% if status == 'Expired' %} class="is-alert"{% endif %}>
+          <td><span class="primary">{{ lot.vaccine_type }}</span><span class="sub">{{ lot.supplier }}</span></td>
+          <td class="nowrap">{{ lot.lot_number }}</td>
+          <td class="nowrap">{{ lot.expiry_date|date:"M d, Y" }}<span class="sub">{% if lot.is_expired %}{{ lot.expiry_date|timesince }} ago{% else %}in {{ lot.expiry_date|timeuntil }}{% endif %}</span></td>
+          <td class="num">{{ lot.quantity_received }}</td>
+          <td class="num"><strong>{{ lot.quantity_on_hand }}</strong></td>
+          <td>{{ lot.storage_unit|default:"–" }}</td>
+          <td><span class="badge badge-{{ status|tone }}">{{ status }}</span></td>
+          <td class="actions">{% if user.can_manage_clinical and lot.quantity_on_hand %}<a class="btn btn-xs" href="{% url 'inventory:stock_adjust' %}?lot={{ lot.pk }}">Adjust</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><svg class="icon"><use href="#i-package"/></svg><strong>No stock</strong>{% if user.can_manage_clinical %}<a href="{% url 'inventory:stock_receive' %}">Receive your first delivery</a>{% endif %}</div>
+  {% endif %}
+</section>
+{% endblock %}

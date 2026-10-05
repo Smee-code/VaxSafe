@@ -1,0 +1,6 @@
+# Versions tested with VaxSafe. Django 6.1 needs Python 3.12 or newer.
+Django==6.1.1
+openpyxl==3.1.5
+xhtml2pdf==0.2.21
+reportlab==5.0.1
+Pillow==12.1.0

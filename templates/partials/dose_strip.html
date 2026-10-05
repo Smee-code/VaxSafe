@@ -1,0 +1,10 @@
+<ol class="dose-strip{% if small %} dose-strip--sm{% endif %}" aria-label="Dose schedule">
+  {% for d in series %}
+  <li class="ds ds--{{ d.strip_state }}{% if current and d.pk == current.pk %} is-current{% endif %}"
+      title="Dose {{ d.dose_number }}, Day {{ d.day_offset }}: {{ d.display_status }}{% if d.date_given %}, given {{ d.date_given|date:'M j' }}{% else %}, due {{ d.due_date|date:'M j' }}{% endif %}">
+    <span class="ds-day">D{{ d.day_offset }}</span>
+    <span class="ds-date">{% if d.date_given %}{{ d.date_given|date:"M j" }}{% else %}{{ d.due_date|date:"M j" }}{% endif %}</span>
+    <span class="sr-only">{{ d.display_status }}</span>
+  </li>
+  {% endfor %}
+</ol>

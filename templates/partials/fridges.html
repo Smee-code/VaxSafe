@@ -1,0 +1,29 @@
+<section class="card">
+  <div class="card-head">
+    <h2><svg class="icon"><use href="#i-thermometer"/></svg>Cold chain</h2>
+    <a class="link" href="{% url 'inventory:temperature_list' %}">Temperature log</a>
+  </div>
+  {% if fridges %}
+  <div class="fridges">
+    {% for f in fridges %}
+    <a class="fridge" href="{% if user.can_manage_clinical %}{% url 'inventory:temperature_create' %}?unit={{ f.unit.pk }}{% else %}{% url 'inventory:temperature_list' %}?unit={{ f.unit.pk }}{% endif %}">
+      <span class="name">
+        <strong>{{ f.unit }}</strong>
+        {% if f.stale %}<span class="stale">No reading in 24 hours{% if user.can_manage_clinical %}. Log one now{% endif %}</span>{% else %}<span>Read {{ f.last.recorded_at|timesince }} ago</span>{% endif %}
+      </span>
+      {% if f.last %}
+      <span class="gauge{% if f.last.out_of_range %} bad{% endif %}" role="img" aria-label="Safe range {{ center.temp_min }} to {{ center.temp_max }} degrees">
+        <span class="band" style="left:{{ f.band_left }}%;width:{{ f.band_width }}%"></span>
+        <span class="pin" style="left:{{ f.pin }}%"></span>
+      </span>
+      <span class="deg{% if f.last.out_of_range %} bad{% endif %}">{{ f.last.reading }}°</span>
+      {% else %}
+      <span class="deg muted">–</span>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><strong>No storage units</strong>An administrator can add them in Settings.</div>
+  {% endif %}
+</section>

@@ -1,0 +1,13 @@
+{% load vaxsafe %}
+{% if page.paginator.count %}
+<div class="pagination">
+  <span>Showing {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }}</span>
+  {% if page.has_other_pages %}
+  <span class="btn-row">
+    {% if page.has_previous %}<a class="btn btn-sm" href="?{% query page=page.previous_page_number %}"><svg class="icon icon-sm"><use href="#i-chev-left"/></svg>Previous</a>{% endif %}
+    <span class="muted small">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="btn btn-sm" href="?{% query page=page.next_page_number %}">Next<svg class="icon icon-sm"><use href="#i-chev-right"/></svg></a>{% endif %}
+  </span>
+  {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,58 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sign in · VaxSafe</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f4e8c'/%3E%3Cpath d='M16 7l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10v-5z' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preload" href="{% static 'fonts/public-sans-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+{% include "partials/icons.html" %}
+<div class="login">
+  <section class="login-art" aria-hidden="true">
+    <div class="brand">
+      <span class="brand-mark">{% if center.logo %}<img src="{{ center.logo.url }}" alt="">{% else %}<svg class="icon" style="width:20px;height:20px"><use href="#i-shield"/></svg>{% endif %}</span>
+      <span class="brand-text"><span class="brand-name">VaxSafe</span><span class="brand-sub">{{ center.name }}</span></span>
+    </div>
+
+    <div>
+      <h2>Every bite case, every dose, on schedule.</h2>
+      <p>Records, follow-up dates, vaccine stock and fridge temperatures for {{ center.name }}, in one place.</p>
+    </div>
+
+    <div class="vax-card">
+      <div class="vc-head"><strong>Anti-rabies vaccination card</strong><span>PVRV, IM</span></div>
+      <div class="vc-row"><span>Category III, dog bite</span><span>Day 0: Oct 1</span></div>
+      <ol class="dose-strip">
+        <li class="ds ds--given"><span class="ds-day">D0</span><span class="ds-date">Oct 1</span></li>
+        <li class="ds ds--given"><span class="ds-day">D3</span><span class="ds-date">Oct 4</span></li>
+        <li class="ds ds--due"><span class="ds-day">D7</span><span class="ds-date">Oct 8</span></li>
+        <li class="ds ds--upcoming"><span class="ds-day">D14</span><span class="ds-date">Oct 15</span></li>
+        <li class="ds ds--upcoming"><span class="ds-day">D28</span><span class="ds-date">Oct 29</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="login-form">
+    <form method="post" class="box">
+      {% csrf_token %}
+      <div class="brand mobile-brand" style="padding:0;border:0">
+        <span class="brand-mark"><svg class="icon" style="width:20px;height:20px"><use href="#i-shield"/></svg></span>
+        <span class="brand-text"><span class="brand-name">VaxSafe</span><span class="brand-sub">{{ center.name }}</span></span>
+      </div>
+      <h1>Sign in</h1>
+      <p class="muted" style="margin-top:6px">Use the account your administrator created for you.</p>
+      {% if form.non_field_errors %}
+        <div class="form-errors" style="margin-top:18px" role="alert">That username and password don't match an active account. Check both and try again.</div>
+      {% endif %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button class="btn btn-primary" type="submit">Sign in</button>
+      {% if center.address %}<p class="muted small" style="margin-top:28px">{{ center.address }}</p>{% endif %}
+    </form>
+  </section>
+</div>
+</body>
+</html>

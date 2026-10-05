@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Audit log</h1>
+    <p class="sub">Who created, changed or deleted which record, and when. Sign-ins and exports are recorded too.</p>
+  </div>
+</div>
+
+<section class="card">
+  <form class="toolbar" method="get">
+    <div class="grow search"><label for="q">Record</label><svg class="icon icon-sm"><use href="#i-search"/></svg><input class="input" id="q" name="q" value="{{ q }}" placeholder="Search record name"></div>
+    <div><label for="user">User</label>
+      <select class="input" id="user" name="user" data-autosubmit><option value="">Everyone</option>{% for u in users %}<option value="{{ u.pk }}"{% if u.pk == user_id %} selected{% endif %}>{{ u }}</option>{% endfor %}</select></div>
+    <div><label for="action">Action</label>
+      <select class="input" id="action" name="action" data-autosubmit><option value="">All actions</option>{% for value, label in actions %}<option value="{{ value }}"{% if value == action %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    <div><label for="model">Record type</label>
+      <select class="input" id="model" name="model" data-autosubmit><option value="">All types</option>{% for m in models %}<option{% if m == model %} selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+    <div><label for="date_from">From</label><input class="input" type="date" id="date_from" name="date_from" value="{{ date_from|date:'Y-m-d' }}"></div>
+    <div><label for="date_to">To</label><input class="input" type="date" id="date_to" name="date_to" value="{{ date_to|date:'Y-m-d' }}"></div>
+    <div><button class="btn" type="submit">Filter</button></div>
+  </form>
+
+  {% if page %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>When</th><th>User</th><th>Action</th><th>Record</th><th>Details</th><th>IP address</th></tr></thead>
+      <tbody>
+      {% for entry in page %}
+        <tr>
+          <td class="nowrap">{{ entry.timestamp|date:"M d, Y" }}<span class="sub">{{ entry.timestamp|date:"g:i:s A" }}</span></td>
+          <td>{{ entry.user|default:"System" }}</td>
+          <td><span class="badge badge-{{ entry.get_action_display|tone }}">{{ entry.get_action_display }}</span></td>
+          <td><span class="primary">{{ entry.object_repr }}</span>{% if entry.model_name %}<span class="sub">{{ entry.model_name }}{% if entry.object_id %} #{{ entry.object_id }}{% endif %}</span>{% endif %}</td>
+          <td class="changes">
+            {% if entry.changes %}
+            <details>
+              <summary>{{ entry.changes|length }} field{{ entry.changes|length|pluralize }}</summary>
+              <dl>
+                {% for field, change in entry.changes.items %}
+                  <dt>{{ field }}</dt>
+                  <dd>{% if change.old %}<del>{{ change.old|truncatechars:80 }}</del> → {% endif %}<ins>{{ change.new|default:"(empty)"|truncatechars:80 }}</ins></dd>
+                {% endfor %}
+              </dl>
+            </details>
+            {% else %}<span class="muted">–</span>{% endif %}
+          </td>
+          <td class="muted small">{{ entry.ip_address|default:"–" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+  {% else %}
+  <div class="empty"><svg class="icon"><use href="#i-history"/></svg><strong>No entries</strong>Nothing matches these filters.</div>
+  {% endif %}
+</section>
+{% endblock %}

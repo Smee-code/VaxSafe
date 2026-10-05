@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Temperature log{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Cold chain temperature log</h1>
+    <p class="sub">Safe range is {{ center.temp_min }}°C to {{ center.temp_max }}°C. Log each unit at least twice a day.</p>
+  </div>
+  {% if user.can_manage_clinical %}
+  <div class="actions"><a class="btn btn-primary" href="{% url 'inventory:temperature_create' %}"><svg class="icon icon-sm"><use href="#i-thermometer"/></svg>Log temperature</a></div>
+  {% endif %}
+</div>
+
+<div class="unit-cards">
+  {% for item in units %}
+  <section class="card unit-card">
+    <span class="thermo{% if not item.last %} none{% elif item.last.out_of_range %} bad{% endif %}"><svg class="icon" style="width:22px;height:22px"><use href="#i-thermometer"/></svg></span>
+    <div style="min-width:0;flex:1">
+      <div class="muted small">{{ item.unit }}{% if item.unit.location %} · {{ item.unit.location }}{% endif %}</div>
+      {% if item.last %}
+        <div class="reading{% if item.last.out_of_range %} temp-bad{% endif %}">{{ item.last.reading }}°C</div>
+        <div class="muted small">{{ item.last.recorded_at|timesince }} ago</div>
+      {% else %}
+        <div class="reading muted">–</div><div class="muted small">No readings yet</div>
+      {% endif %}
+    </div>
+    {% if user.can_manage_clinical %}<a class="btn btn-sm" href="{% url 'inventory:temperature_create' %}?unit={{ item.unit.pk }}">Log</a>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+
+<section class="card">
+  <form class="toolbar" method="get">
+    <select class="input" style="width:auto" name="unit" data-autosubmit aria-label="Storage unit"><option value="">All units</option>{% for u in all_units %}<option value="{{ u.pk }}"{% if u.pk == unit %} selected{% endif %}>{{ u }}</option>{% endfor %}</select>
+    <input class="input" style="width:auto" type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" aria-label="From">
+    <input class="input" style="width:auto" type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" aria-label="To">
+    <label class="check" style="display:flex;gap:6px;align-items:center;margin:0 0 9px;font-size:13px;color:var(--ink-2)"><input class="checkbox" type="checkbox" name="alerts" value="1"{% if only_alerts %} checked{% endif %} data-autosubmit>Out of range only</label>
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  {% if page %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Date and time</th><th>Storage unit</th><th class="num">Reading</th><th>Status</th><th>Recorded by</th><th>Notes / action taken</th></tr></thead>
+      <tbody>
+      {% for log in page %}
+        <tr{% if log.out_of_range %} class="is-alert"{% endif %}>
+          <td class="nowrap">{{ log.recorded_at|date:"M d, Y g:i A" }}</td>
+          <td>{{ log.unit }}</td>
+          <td class="num{% if log.out_of_range %} temp-bad{% endif %}">{{ log.reading }}°C</td>
+          <td>{% if log.out_of_range %}<span class="badge badge-danger">Out of range</span>{% else %}<span class="badge badge-ok">OK</span>{% endif %}</td>
+          <td>{{ log.recorded_by|default:"–" }}</td>
+          <td>{{ log.notes|default:"" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+  {% else %}
+  <div class="empty"><svg class="icon"><use href="#i-thermometer"/></svg><strong>No readings</strong>Nothing matches these filters.</div>
+  {% endif %}
+</section>
+{% endblock %}

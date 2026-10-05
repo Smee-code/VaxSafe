@@ -1,0 +1,121 @@
+{% load static vaxsafe %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f5f7">
+  <title>{% block title %}VaxSafe{% endblock %} · {{ center.name|default:"VaxSafe" }}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f4e8c'/%3E%3Cpath d='M16 7l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10v-5z' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preload" href="{% static 'fonts/public-sans-latin-wght-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+{% include "partials/icons.html" %}
+<div class="shell">
+  <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <a class="brand" href="{% url 'core:dashboard' %}">
+      <span class="brand-mark">{% if center.logo %}<img src="{{ center.logo.url }}" alt="">{% else %}<svg class="icon" style="width:20px;height:20px"><use href="#i-shield"/></svg>{% endif %}</span>
+      <span class="brand-text"><span class="brand-name">VaxSafe</span><span class="brand-sub">{{ center.name }}</span></span>
+    </a>
+
+    <nav class="nav">
+      <div class="nav-group">
+        <a href="{% url 'core:dashboard' %}" class="{% nav_active 'core:dashboard' %}"><svg class="icon"><use href="#i-dashboard"/></svg><span>Today</span></a>
+      </div>
+
+      {% if user.can_manage_clinical %}
+      <div class="nav-group">
+        <div class="nav-label">Patient care</div>
+        <a href="{% url 'clinic:patient_list' %}" class="{% nav_active 'clinic:patient_list' '/visits/' %}"><svg class="icon"><use href="#i-user"/></svg><span>Patients</span></a>
+        <a href="{% url 'clinic:appointments' %}" class="{% nav_active 'clinic:appointments' '/doses/' %}"><svg class="icon"><use href="#i-calendar"/></svg><span>Doses due</span></a>
+        <a href="{% url 'clinic:assessment_list' %}" class="{% nav_active 'clinic:assessment_list' %}"><svg class="icon"><use href="#i-clipboard"/></svg><span>Assessments</span></a>
+      </div>
+      {% endif %}
+
+      <div class="nav-group">
+        <div class="nav-label">Vaccines and cold chain</div>
+        <a href="{% url 'inventory:stock_list' %}" class="{% if request.path == '/inventory/' or '/inventory/lots/' in request.path or '/inventory/receive/' in request.path or '/inventory/adjust/' in request.path %}is-active{% endif %}">
+          <svg class="icon"><use href="#i-package"/></svg><span>Stock</span>
+          {% if alerts.stock_total %}<span class="count">{{ alerts.stock_total }}</span>{% endif %}
+        </a>
+        <a href="{% url 'inventory:movement_list' %}" class="{% nav_active 'inventory:movement_list' %}"><svg class="icon"><use href="#i-syringe"/></svg><span>Usage log</span></a>
+        <a href="{% url 'inventory:temperature_list' %}" class="{% nav_active 'inventory:temperature_list' %}"><svg class="icon"><use href="#i-thermometer"/></svg><span>Fridges</span>
+          {% if alerts.temperature %}<span class="count">{{ alerts.temperature|length }}</span>{% endif %}
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-label">Monitoring</div>
+        <a href="{% url 'reports:index' %}" class="{% nav_active 'reports:index' %}"><svg class="icon"><use href="#i-chart"/></svg><span>Reports</span></a>
+      </div>
+
+      {% if user.is_admin %}
+      <div class="nav-group">
+        <div class="nav-label">Administration</div>
+        <a href="{% url 'accounts:user_list' %}" class="{% nav_active 'accounts:user_list' %}"><svg class="icon"><use href="#i-users"/></svg><span>Users</span></a>
+        <a href="{% url 'core:settings' %}" class="{% nav_active 'core:settings' %}"><svg class="icon"><use href="#i-settings"/></svg><span>Settings</span></a>
+        <a href="{% url 'core:audit_log' %}" class="{% nav_active 'core:audit_log' %}"><svg class="icon"><use href="#i-history"/></svg><span>Audit log</span></a>
+        <a href="{% url 'core:backup' %}" class="{% nav_active 'core:backup' %}"><svg class="icon"><use href="#i-database"/></svg><span>Backup</span></a>
+      </div>
+      {% endif %}
+    </nav>
+
+    <div class="side-user">
+      <span class="avatar" aria-hidden="true">{{ user|initials }}</span>
+      <span class="who"><strong>{{ user }}</strong><span>{{ user.get_role_display }}</span></span>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <a class="top-brand" href="{% url 'core:dashboard' %}">
+        <span class="brand-mark">{% if center.logo %}<img src="{{ center.logo.url }}" alt="">{% else %}<svg class="icon icon-sm"><use href="#i-shield"/></svg>{% endif %}</span>VaxSafe
+      </a>
+      <span class="today-line">{{ today|date:"l, F j" }} <span>{{ today|date:"Y" }}</span></span>
+      {% if user.can_manage_clinical %}
+      <form class="quick-search" action="{% url 'clinic:patient_list' %}" method="get" role="search">
+        <svg class="icon icon-sm"><use href="#i-search"/></svg>
+        <input class="input" type="search" name="q" placeholder="Find patient by name, ID or phone" aria-label="Find patient">
+      </form>
+      {% endif %}
+      <span class="spacer"></span>
+      <a class="icon-btn" href="{% url 'core:dashboard' %}#alerts" title="Alerts" aria-label="{{ alerts.total }} alert{{ alerts.total|pluralize }}">
+        <svg class="icon"><use href="#i-bell"/></svg>
+        {% if alerts.total %}<span class="dot">{{ alerts.total }}</span>{% endif %}
+      </a>
+      <details class="user-menu">
+        <summary aria-label="Account menu"><span class="avatar">{{ user|initials }}</span></summary>
+        <div class="menu">
+          <div class="meta"><strong>{{ user }}</strong><div class="muted small">{{ user.get_role_display }}{% if user.position %}, {{ user.position }}{% endif %}</div></div>
+          <a href="{% url 'accounts:password_change' %}"><svg class="icon icon-sm"><use href="#i-key"/></svg>Change password</a>
+          <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}
+            <button type="submit"><svg class="icon icon-sm"><use href="#i-logout"/></svg>Sign out</button>
+          </form>
+        </div>
+      </details>
+    </header>
+
+    <main class="content" id="content">
+      {% include "partials/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<nav class="tabbar" aria-label="Quick navigation">
+  <a href="{% url 'core:dashboard' %}" class="{% nav_active 'core:dashboard' %}"><svg class="icon"><use href="#i-dashboard"/></svg>Today</a>
+  {% if user.can_manage_clinical %}
+  <a href="{% url 'clinic:patient_list' %}" class="{% nav_active 'clinic:patient_list' '/visits/' %}"><svg class="icon"><use href="#i-user"/></svg>Patients</a>
+  <a href="{% url 'clinic:appointments' %}" class="{% nav_active 'clinic:appointments' '/doses/' %}"><svg class="icon"><use href="#i-calendar"/></svg>Doses</a>
+  {% else %}
+  <a href="{% url 'reports:index' %}" class="{% nav_active 'reports:index' %}"><svg class="icon"><use href="#i-chart"/></svg>Reports</a>
+  <a href="{% url 'inventory:temperature_list' %}" class="{% nav_active 'inventory:temperature_list' %}"><svg class="icon"><use href="#i-thermometer"/></svg>Fridges</a>
+  {% endif %}
+  <a href="{% url 'inventory:stock_list' %}" class="{% if request.path == '/inventory/' %}is-active{% endif %}"><svg class="icon"><use href="#i-package"/></svg>Stock{% if alerts.stock_total %}<span class="count">{{ alerts.stock_total }}</span>{% endif %}</a>
+  <button type="button" data-nav-toggle aria-controls="sidebar"><svg class="icon"><use href="#i-menu"/></svg>More</button>
+</nav>
+
+{% block charts %}{% endblock %}
+<script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

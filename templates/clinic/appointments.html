@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load vaxsafe %}
+{% block title %}Appointments{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Appointments</h1>
+    <p class="sub">Doses due, coming up and needing follow-up. Generated automatically from each patient's schedule.</p>
+  </div>
+  <div class="actions"><a class="btn" href="{% url 'clinic:calendar' %}"><svg class="icon icon-sm"><use href="#i-calendar"/></svg>Calendar view</a></div>
+</div>
+
+<section class="card">
+  <nav class="tabs" aria-label="Appointment lists">
+    <a href="?tab=today" class="{% if tab == 'today' %}is-active{% endif %}">Due today <span class="pill">{{ counts.today }}</span></a>
+    <a href="?tab=upcoming&days={{ days }}" class="{% if tab == 'upcoming' %}is-active{% endif %}">Next {{ days }} days <span class="pill">{{ counts.upcoming }}</span></a>
+    <a href="?tab=followup" class="{% if tab == 'followup' %}is-active{% endif %}">Missed and overdue <span class="pill{% if counts.followup %} hot{% endif %}">{{ counts.followup }}</span></a>
+    <a href="?tab=completed" class="{% if tab == 'completed' %}is-active{% endif %}">Completed</a>
+    {% if tab == 'date' %}<a class="is-active" href="#">{{ on_date|date:"M d, Y" }}</a>{% endif %}
+  </nav>
+  <form class="toolbar" method="get">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    {% if on_date %}<input type="hidden" name="date" value="{{ on_date|date:'Y-m-d' }}">{% endif %}
+    <div class="grow search"><svg class="icon icon-sm"><use href="#i-search"/></svg><input class="input" name="q" value="{{ q }}" placeholder="Filter by patient name, ID or phone" aria-label="Filter"></div>
+    {% if tab == 'upcoming' %}
+    <select class="input" style="width:auto" name="days" data-autosubmit aria-label="Range">
+      <option value="3"{% if days == 3 %} selected{% endif %}>Next 3 days</option>
+      <option value="7"{% if days == 7 %} selected{% endif %}>Next 7 days</option>
+      <option value="14"{% if days == 14 %} selected{% endif %}>Next 14 days</option>
+      <option value="30"{% if days == 30 %} selected{% endif %}>Next 30 days</option>
+    </select>
+    {% endif %}
+    <button class="btn" type="submit">Filter</button>
+  </form>
+
+  {% if page %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Patient</th><th>{% if tab == 'completed' %}Given{% else %}Due{% endif %}</th><th>Phone</th><th>Course</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for dose in page %}
+        <tr{% if dose.display_status == 'Overdue' or dose.status == 'MISSED' %} class="is-alert"{% endif %}>
+          <td><a class="primary" href="{% url 'clinic:visit_detail' dose.visit_id %}">{{ dose.visit.patient.full_name }}</a><span class="sub">{{ dose.vaccine_type }}, dose {{ dose.dose_number }}</span></td>
+          <td class="nowrap">
+            {% if tab == 'completed' %}{{ dose.date_given|date:"M j, Y" }}<span class="sub">{{ dose.administered_by|default:"" }}</span>
+            {% else %}{{ dose.due_date|date:"D, M j" }}{% if dose.due_date < today %}<span class="sub">{{ dose.due_date|timesince }} ago</span>{% endif %}{% endif %}
+          </td>
+          <td class="nowrap">{% if dose.visit.patient.contact_number %}<a href="tel:{{ dose.visit.patient.contact_number }}">{{ dose.visit.patient.contact_number }}</a>{% else %}–{% endif %}</td>
+          <td>{% include "partials/dose_strip.html" with series=dose.series current=dose small=True %}</td>
+          <td><span class="badge badge-{{ dose.display_status|tone }}">{{ dose.display_status }}</span></td>
+          <td class="actions">{% include "clinic/_dose_actions.html" with next_url=request.get_full_path %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+  {% else %}
+  <div class="empty">
+    <svg class="icon"><use href="#i-calendar"/></svg>
+    {% if tab == 'followup' %}<strong>No missed or overdue doses</strong>Every patient is on schedule.
+    {% elif tab == 'today' %}<strong>Nothing due today</strong>Check the upcoming list or the calendar.
+    {% else %}<strong>No appointments</strong>Nothing matches this view.{% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<p class="muted small" style="margin-top:12px">SMS reminders to patients are planned as a future feature. For now, call patients on the missed and overdue list.</p>
+{% endblock %}

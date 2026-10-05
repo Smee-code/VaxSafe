@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Not found{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div>
+    <div class="code">404</div>
+    <h1 style="margin-top:12px">Page not found</h1>
+    <p class="muted" style="margin-top:6px">The record may have been removed, or the link is wrong.</p>
+    <p style="margin-top:18px"><a class="btn btn-primary" href="{% url 'core:dashboard' %}">Go to dashboard</a></p>
+  </div>
+</div>
+{% endblock %}

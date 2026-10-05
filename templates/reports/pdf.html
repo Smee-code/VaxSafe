@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: a4 portrait; margin: 1.6cm 1.4cm; @frame footer { -pdf-frame-content: footer; bottom: .8cm; margin-left: 1.4cm; margin-right: 1.4cm; height: .6cm; } }
+  body { font-family: Helvetica; font-size: 9pt; color: #15211e; }
+  .head td { vertical-align: middle; }
+  .center { font-size: 13pt; font-weight: bold; }
+  .muted { color: #66746f; }
+  h1 { font-size: 15pt; margin: 14px 0 2px; color: #0b5a54; }
+  h2 { font-size: 11pt; margin: 16px 0 6px; }
+  table.data { width: 100%; border-collapse: collapse; }
+  table.data th { background: #0f766e; color: #ffffff; padding: 4px 5px; text-align: left; font-size: 8pt; }
+  table.data td { padding: 4px 5px; border-bottom: .5px solid #d5ddd9; font-size: 8.5pt; }
+  table.data tfoot td, tr.foot td { font-weight: bold; background: #eef1f0; }
+  .summary td { padding: 6px 8px; border: .5px solid #d5ddd9; }
+  .summary .v { font-size: 13pt; font-weight: bold; }
+  .note { font-size: 8pt; color: #66746f; margin-top: 4px; }
+  .rule { border-bottom: 1.5px solid #15211e; margin: 8px 0 4px; }
+</style>
+</head>
+<body>
+<table class="head">
+  <tr>
+    {% if logo_path %}<td width="56"><img src="{{ logo_path }}" width="48" height="48"></td>{% endif %}
+    <td><div class="center">{{ center.name }}</div><div class="muted">{{ center.address }}{% if center.contact_number %} · {{ center.contact_number }}{% endif %}</div></td>
+  </tr>
+</table>
+<div class="rule"></div>
+
+<h1>{{ report.title }}</h1>
+<div class="muted">{{ report.description }}</div>
+<div class="muted">{{ filter_text|join:" · " }}</div>
+
+{% if report.summary %}
+<table class="summary" style="margin-top:12px; width:100%">
+  <tr>
+    {% for label, value in report.summary %}
+    <td><div class="muted">{{ label }}</div><div class="v">{{ value }}</div></td>
+    {% if forloop.counter|divisibleby:4 and not forloop.last %}</tr><tr>{% endif %}
+    {% endfor %}
+  </tr>
+</table>
+{% endif %}
+
+{% for table in report.tables %}
+<h2>{{ table.title }}</h2>
+{% if table.rows %}
+<table class="data" repeat="1">
+  <thead><tr>{% for col in table.columns %}<th>{{ col }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for row in table.rows %}<tr>{% for cell in row %}<td>{% if cell.year %}{{ cell|date:"Y-m-d" }}{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% endfor %}
+    {% if table.footer %}<tr class="foot">{% for cell in table.footer %}<td>{{ cell }}</td>{% endfor %}</tr>{% endif %}
+  </tbody>
+</table>
+{% else %}
+<div class="muted">No records for the selected filters.</div>
+{% endif %}
+{% if table.note %}<div class="note">{{ table.note }}</div>{% endif %}
+{% endfor %}
+
+<div id="footer" class="muted" style="font-size:7.5pt">
+  VaxSafe · Generated {{ generated|date:"M d, Y g:i A" }} by {{ user }} · Page <pdf:pagenumber> of <pdf:pagecount>
+</div>
+</body>
+</html>

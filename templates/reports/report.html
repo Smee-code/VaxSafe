@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ report.title }} report{% endblock %}
+{% block content %}
+<div class="page-head no-print">
+  <div>
+    <h1>Reports</h1>
+    <p class="sub">Summary figures only. Individual patient details are never included.</p>
+  </div>
+  <div class="actions">
+    <button class="btn" type="button" onclick="window.print()"><svg class="icon icon-sm"><use href="#i-printer"/></svg>Print</button>
+    <a class="btn" href="?{{ query }}{% if query %}&{% endif %}export=pdf"><svg class="icon icon-sm"><use href="#i-file"/></svg>PDF</a>
+    <a class="btn btn-primary" href="?{{ query }}{% if query %}&{% endif %}export=xlsx"><svg class="icon icon-sm"><use href="#i-sheet"/></svg>Excel</a>
+  </div>
+</div>
+
+<nav class="report-nav" aria-label="Reports">
+  {% for k, r in available.items %}
+  <a href="{% url 'reports:report' k %}" class="{% if k == key %}is-active{% endif %}">{{ r.title }}</a>
+  {% endfor %}
+</nav>
+
+{% if spec.filters %}
+<section class="card no-print" style="margin-bottom:16px">
+  <form class="toolbar" method="get" style="border-bottom:0">
+    {% if 'date' in spec.filters %}
+      <div><label for="date_from">From</label><input class="input" type="date" id="date_from" name="date_from" value="{{ filters.date_from|date:'Y-m-d' }}"></div>
+      <div><label for="date_to">To</label><input class="input" type="date" id="date_to" name="date_to" value="{{ filters.date_to|date:'Y-m-d' }}"></div>
+    {% endif %}
+    {% if 'barangay' in spec.filters %}
+      <div><label for="barangay">Barangay</label><select class="input" id="barangay" name="barangay"><option value="">All barangays</option>{% for b in barangays %}<option value="{{ b.pk }}"{% if b == filters.barangay %} selected{% endif %}>{{ b }}</option>{% endfor %}</select></div>
+    {% endif %}
+    {% if 'category' in spec.filters %}
+      <div><label for="category">Category</label><select class="input" id="category" name="category"><option value="">All categories</option>{% for c in categories %}<option value="{{ c.pk }}"{% if c == filters.category %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+    {% endif %}
+    {% if 'unit' in spec.filters %}
+      <div><label for="unit">Storage unit</label><select class="input" id="unit" name="unit"><option value="">All units</option>{% for u in units %}<option value="{{ u.pk }}"{% if u == filters.unit %} selected{% endif %}>{{ u }}</option>{% endfor %}</select></div>
+    {% endif %}
+    {% if 'days' in spec.filters %}
+      <div><label for="days">Expiring within (days)</label><input class="input" type="number" min="1" max="3650" id="days" name="days" value="{{ filters.days }}" style="width:140px"></div>
+    {% endif %}
+    <div><button class="btn btn-primary" type="submit">Apply</button></div>
+    <div><a class="btn btn-ghost" href="{% url 'reports:report' key %}">Reset</a></div>
+  </form>
+</section>
+{% endif %}
+
+<div class="report-head">
+  {% if center.logo %}<img src="{{ center.logo.url }}" alt="">{% endif %}
+  <div><strong style="font-size:15px">{{ center.name }}</strong><div class="small">{{ center.address }}</div></div>
+</div>
+
+<div class="report-title">
+  <h2>{{ report.title }}</h2>
+  <p>{{ report.description }}</p>
+  <div class="filters-used">{% for f in filter_text %}<span>{{ f }}</span>{% endfor %}<span>Generated {{ generated|date:"M j, Y g:i A" }}</span></div>
+</div>
+
+{% if report.summary %}
+<div class="summary-grid">
+  {% for label, value in report.summary %}
+  <div class="stat"><span class="label">{{ label }}</span><div class="value">{{ value }}</div></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if report.charts %}
+<div class="grid {% if report.charts|length > 1 %}grid-2{% endif %}" style="margin-bottom:16px">
+  {% for chart in report.charts %}
+  <section class="card chart-card{% if chart.horizontal %} tall{% endif %}">
+    <div class="card-head"><h2>{{ chart.title }}</h2></div>
+    <div class="card-body"><canvas id="chart-{{ chart.id }}" aria-label="{{ chart.title }}"></canvas></div>
+  </section>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% for table in report.tables %}
+<section class="card">
+  <div class="card-head"><h2>{{ table.title }}</h2><span class="muted small">{{ table.rows|length }} row{{ table.rows|length|pluralize }}</span></div>
+  {% if table.rows %}
+  <div class="table-wrap">
+    <table class="table compact">
+      <thead><tr>{% for col in table.columns %}<th{% if not forloop.first %} class="num"{% endif %}>{{ col }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for row in table.rows %}
+        <tr>{% for cell in row %}<td{% if not forloop.first %} class="num"{% endif %}>{% if cell.year %}{{ cell|date:"M d, Y" }}{% elif cell == 'Out of range' or cell == 'Expired' %}<span class="badge badge-danger">{{ cell }}</span>{% elif cell == 'Expiring soon' %}<span class="badge badge-warn">{{ cell }}</span>{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+      {% if table.footer %}<tfoot><tr>{% for cell in table.footer %}<td{% if not forloop.first %} class="num"{% endif %}>{{ cell }}</td>{% endfor %}</tr></tfoot>{% endif %}
+    </table>
+  </div>
+  {% else %}
+  <div class="empty"><strong>No records</strong>Nothing for the selected filters.</div>
+  {% endif %}
+  {% if table.note %}<p class="table-note">{{ table.note }}</p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}
+
+{% block charts %}
+{% if report.charts %}
+{{ report.charts|json_script:"chart-data" }}
+<script src="{% static 'vendor/chart.umd.min.js' %}"></script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,11 @@
+{% if messages and not is_modal %}
+<ul class="messages">
+  {% for message in messages %}
+  <li class="message {{ message.tags }}" role="status">
+    <svg class="icon"><use href="#{% if message.tags == 'success' %}i-check-circle{% elif message.tags == 'danger' %}i-x-circle{% elif message.tags == 'warning' %}i-alert{% else %}i-info{% endif %}"/></svg>
+    <span>{{ message }}</span>
+    <button type="button" aria-label="Dismiss">&times;</button>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}

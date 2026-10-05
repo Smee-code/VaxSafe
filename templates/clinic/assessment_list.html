@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Bite assessments{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Bite assessments</h1>
+    <p class="sub">All past assessments. To add one, open the patient's visit.</p>
+  </div>
+</div>
+
+<section class="card">
+  <form class="toolbar" method="get">
+    <div class="grow search"><svg class="icon icon-sm"><use href="#i-search"/></svg><input class="input" name="q" value="{{ q }}" placeholder="Patient name or ID" aria-label="Search"></div>
+    <select class="input" style="width:auto" name="category" data-autosubmit aria-label="Category"><option value="">All categories</option>{% for c in categories %}<option value="{{ c.pk }}"{% if c.pk == category %} selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+    <select class="input" style="width:auto" name="animal" data-autosubmit aria-label="Animal"><option value="">All animals</option>{% for value, label in animals %}<option value="{{ value }}"{% if value == animal %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+    <input class="input" style="width:auto" type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" aria-label="From">
+    <input class="input" style="width:auto" type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" aria-label="To">
+    <button class="btn" type="submit">Filter</button>
+  </form>
+  {% if page %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Visit date</th><th>Patient</th><th>Category</th><th>Animal</th><th>Exposure</th><th>Wound</th><th>Assessed by</th></tr></thead>
+      <tbody>
+      {% for a in page %}
+        <tr data-href="{% url 'clinic:visit_detail' a.visit_id %}">
+          <td class="nowrap">{{ a.visit.visit_date|date:"M d, Y" }}</td>
+          <td><span class="primary">{{ a.visit.patient.full_name }}</span><span class="sub">{{ a.visit.patient.patient_code }} · {{ a.visit.patient.barangay }}</span></td>
+          <td><span class="cat cat-{{ a.category.code }}">{{ a.category.code }}</span></td>
+          <td>{{ a.animal_display }}<span class="sub">{{ a.get_animal_ownership_display }}</span></td>
+          <td>{{ a.get_exposure_type_display }}</td>
+          <td>{{ a.wound_location }}</td>
+          <td>{{ a.assessed_by|default:"–" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+  {% else %}
+  <div class="empty"><svg class="icon"><use href="#i-clipboard"/></svg><strong>No assessments found</strong>Try different filters.</div>
+  {% endif %}
+</section>
+{% endblock %}

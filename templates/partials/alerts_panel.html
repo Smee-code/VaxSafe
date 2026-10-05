@@ -1,0 +1,40 @@
+<section class="card" id="alerts">
+  <div class="card-head">
+    <h2><svg class="icon"><use href="#i-bell"/></svg>Alerts</h2>
+    {% if alerts.total %}<span class="badge badge-danger">{{ alerts.total }} active</span>{% endif %}
+  </div>
+  {% if alerts.total %}
+  <ul class="alert-list">
+    {% for log in alerts.temperature %}
+    <li>
+      <span class="alert-ico danger"><svg class="icon"><use href="#i-thermometer"/></svg></span>
+      <div><strong>{{ log.unit }} at {{ log.reading }}°C</strong>
+        <span class="meta">Outside {{ alerts.center.temp_min }}–{{ alerts.center.temp_max }}°C · {{ log.recorded_at|timesince }} ago</span></div>
+    </li>
+    {% endfor %}
+    {% for lot in alerts.expired %}
+    <li>
+      <span class="alert-ico danger"><svg class="icon"><use href="#i-x-circle"/></svg></span>
+      <div><strong>Expired: {{ lot.vaccine_type }}</strong>
+        <span class="meta">Lot {{ lot.lot_number }} · {{ lot.quantity_on_hand }} doses · expired {{ lot.expiry_date|date:"M d, Y" }}</span></div>
+    </li>
+    {% endfor %}
+    {% for item in alerts.low_stock %}
+    <li>
+      <span class="alert-ico warn"><svg class="icon"><use href="#i-package"/></svg></span>
+      <div><strong>Low stock: {{ item.vaccine }}</strong>
+        <span class="meta">{{ item.usable }} usable doses left (alert level {{ item.threshold }})</span></div>
+    </li>
+    {% endfor %}
+    {% for lot in alerts.expiring %}
+    <li>
+      <span class="alert-ico warn"><svg class="icon"><use href="#i-clock"/></svg></span>
+      <div><strong>Expiring soon: {{ lot.vaccine_type }}</strong>
+        <span class="meta">Lot {{ lot.lot_number }} · {{ lot.quantity_on_hand }} doses · expires in {{ lot.days_to_expiry }} day{{ lot.days_to_expiry|pluralize }}</span></div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="all-clear"><svg class="icon"><use href="#i-check-circle"/></svg>All clear. Stock and cold chain are within limits.</div>
+  {% endif %}
+</section>
